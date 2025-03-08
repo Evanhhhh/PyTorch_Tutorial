@@ -1,5 +1,8 @@
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+
 
 #一组x，y是一个坐标
 x_data = [1.0, 2.0, 3.0]
