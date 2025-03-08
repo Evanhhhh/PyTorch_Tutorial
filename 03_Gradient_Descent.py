@@ -1,4 +1,6 @@
 # 1. 梯度下降 Gradient Descent
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 x_data = [1.0, 2.0, 3.0]

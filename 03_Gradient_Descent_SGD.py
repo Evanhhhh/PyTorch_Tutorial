@@ -5,7 +5,8 @@
 2、梯度函数gradient()由计算所有训练数据的梯度更改为计算一个训练数据的梯度。
 3、本算法中的随机梯度主要是指，每次拿一个训练数据来训练，然后更新梯度参数。本算法中梯度总共更新100(epoch)x3 = 300次。梯度下降法中梯度总共更新100(epoch)次。
 '''
-
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
 x_data = [1.0, 2.0, 3.0]
