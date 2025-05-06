@@ -140,7 +140,7 @@ def test():
             correct += (predicted == label).sum().item()
     accuracy = 100 * correct / total
     accuracy_list.append(accuracy)
-    print('Accuracy on test set: %d %%' % accuracy)
+    print('Accuracy on test set: %.2f %%' % accuracy)
 
 
 if __name__ == '__main__':
