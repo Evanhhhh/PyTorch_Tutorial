@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 batch_size = 64
 tranform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.1307,), (0.3081,))
+    transforms.ToTensor(),  # 将PIL图像或numpy.ndarray转换为pytorch的张量格式Tensor
+    transforms.Normalize((0.1307,), (0.3081,))  # 针对 MNIST 数据集的像素分布进行的标准化
 ])
 
 train_dataset = datasets.MNIST(root='dataset/mnist', train=True, download=False, transform=tranform)
@@ -23,8 +23,8 @@ class Net(torch.nn.Module):
         super(Net, self).__init__()
         self.conv1 = torch.nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = torch.nn.Conv2d(10, 20, kernel_size=5)
-        self.pooling = torch.nn.MaxPool2d(kernel_size=2)
-        self.fc = torch.nn.Linear(320, 10)
+        self.pooling = torch.nn.MaxPool2d(kernel_size=2)  # 默认stride等于kernel_size
+        self.fc = torch.nn.Linear(320, 10)  #以下有避免手算in_features的方式
 
     def forward(self, x):
         # Flatten the data (n, 1, 28, 28) -> (n, 784)
@@ -37,6 +37,34 @@ class Net(torch.nn.Module):
         x = x.view(batch_size, -1)
         x = self.fc(x)
         return x
+
+'''
+要避免手动计算全连接层的输入维度，可以通过在前向传播中动态推导该值。以下是一个改进后的网络实现，通过自适应扁平化（Adaptive Flattening）自动计算特征维度：
+class Net(torch.nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        self.conv1 = torch.nn.Conv2d(1, 10, kernel_size=5)
+        self.conv2 = torch.nn.Conv2d(10, 20, kernel_size=5)
+        self.pooling = torch.nn.MaxPool2d(kernel_size=2)
+        self.fc = None  # 延迟初始化全连接层
+        
+    def forward(self, x):
+        batch_size = x.size(0)
+        x = self.pooling(F.relu(self.conv1(x)))
+        x = self.pooling(F.relu(self.conv2(x)))
+        # 动态计算特征维度
+        if self.fc is None:
+            # 第一次前向传播时计算并初始化全连接层
+            feature_size = x.view(batch_size, -1).size(1)
+            
+            # 之前的卷积层和池化层是在 __init__ 中初始化的。当整个模型被移动到 GPU 时（例如通过 model.to(device)），这些层会自动跟随模型一起移动。
+            # 但 self.fc 是在第一次前向传播时动态创建的。如果不明确指定 .to(x.device)，它默认会在 CPU 上创建，这可能与输入数据 x 的设备不一致。
+            self.fc = nn.Linear(feature_size, 10).to(x.device)  #注意要加.to(x.device)
+
+        x = x.view(batch_size, -1)  # 展平为一维向量
+        x = self.fc(x)
+        return x
+'''
 
 
 model = Net()
@@ -58,11 +86,11 @@ def train(epoch):
     for batch_idx, data in enumerate(train_loader, 0):
         inputs, labels = data
         inputs, labels = inputs.to(device), labels.to(device)
-        optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
+        optimizer.zero_grad()  # 清零梯度
+        outputs = model(inputs)  # 前向传播
+        loss = criterion(outputs, labels)  # 计算损失
+        loss.backward()  # 反向传播
+        optimizer.step()  # 更新参数
         running_loss += loss.item()
 
     avg_loss = running_loss / len(train_loader)
