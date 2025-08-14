@@ -212,6 +212,9 @@ if __name__ == '__main__':
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(classifier.parameters(), lr=0.001)
 
+    ### 改动 1：新增保存模型逻辑
+    best_acc = 0.0
+
     start = time.time()
     print('Training for %d epochs...' % N_EPOCHS)
     acc_list = []
@@ -222,6 +225,12 @@ if __name__ == '__main__':
         acc = testModel()
         acc_list.append(acc)
 
+        # 如果当前模型效果更好，保存
+        if acc > best_acc:
+            best_acc = acc
+            torch.save(classifier.state_dict(), "best_model.pth")
+            print(f"Best model saved with accuracy: {best_acc:.4f}")
+
     # 绘制在测试集上的准确率
     epoch = np.arange(1, len(acc_list) + 1)
     acc_list = np.array(acc_list)
@@ -231,3 +240,12 @@ if __name__ == '__main__':
     plt.grid()
     plt.show()
 
+    ### 改动 2：加载并测试保存的模型
+    print("\nLoading best model for final test...")
+    classifier = RNNClassifier(N_CHARS, HIDDEN_SIZE, N_COUNTRY, N_LAYER)
+    classifier.load_state_dict(torch.load("best_model.pth", weights_only=True))
+    if USE_GPU:
+        classifier.to(device)
+    classifier.eval()
+    final_acc = testModel()
+    print(f"Final Accuracy from saved model: {final_acc:.4f}")
